@@ -1,0 +1,5 @@
+# exported files (input)
+*.json
+
+# artifact
+obsidianPages/
