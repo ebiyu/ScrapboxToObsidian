@@ -6,6 +6,7 @@ await ensureDir("./obsidianPages");
 
 const filePath = Deno.args[0];
 const projectName = Deno.args[1] ?? "PROJECT_NAME";
+const sid = Deno.args[2];
 try {
   clearDownloadList();
   const projectFile = await Deno.readTextFile(`./${filePath}`);
@@ -38,7 +39,14 @@ try {
       continue;
     }
 
-    const response = await fetch(imageUrl);
+
+    const headers = {}
+    if (sid) {
+      headers['Cookie'] = `connect.sid=${sid}`
+    }
+    const response = await fetch(imageUrl, {
+      headers: headers
+    });
     if (!response.ok) {
       console.error(`Failed to download ${i + 1}/${downloadList.length}: ${imageUrl}: ${response.status} ${response.statusText}`);
       throw new Error(`Failed to download ${imageUrl}: ${response.status} ${response.statusText}`);
