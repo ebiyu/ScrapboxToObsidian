@@ -1,12 +1,13 @@
-import { convertScrapboxToObsidian } from "./convert.js";
+import { convertScrapboxToObsidian, clearDownloadList, getDownloadList } from "./convert.js";
 import { parse } from "https://esm.sh/@progfay/scrapbox-parser@8.1.0";
-import { ensureDir } from "https://deno.land/std@0.170.0/fs/mod.ts";
+import { ensureDir, existsSync } from "https://deno.land/std@0.170.0/fs/mod.ts";
 
 await ensureDir("./obsidianPages");
 
 const filePath = Deno.args[0];
 const projectName = Deno.args[1] ?? "PROJECT_NAME";
 try {
+  clearDownloadList();
   const projectFile = await Deno.readTextFile(`./${filePath}`);
   const projectJson = JSON.parse(projectFile);
   const pages = projectJson["pages"];
@@ -20,6 +21,32 @@ try {
     }.md`;
     await Deno.writeTextFile(obsidianPagePath, obsidianPage);
     await Deno.utime(obsidianPagePath, new Date(), page["updated"]);
+  }
+
+  // Download images
+  const downloadList = getDownloadList();
+  if (downloadList.length > 0) {
+    // Create a directory for images
+    await ensureDir("./obsidianPages/images");
+    console.log(`Downloading ${downloadList.length} images`);
+  }
+  for (let i = 0; i < downloadList.length; i++) {
+    const imageUrl = downloadList[i];
+    // Download image if not exists
+    if (existsSync(`./obsidianPages/images/${imageUrl.replace("https://scrapbox.io/files/", "")}`)) {
+      console.log(`Skipping ${i + 1}/${downloadList.length}: ${imageUrl} because it already exists`);
+      continue;
+    }
+
+    const response = await fetch(imageUrl);
+    const imageData = new Uint8Array(await response.arrayBuffer());
+    const imagePath = `./obsidianPages/images/${imageUrl.replace("https://scrapbox.io/files/", "")}`;
+    await Deno.writeFile(imagePath, imageData);
+
+    // Wait for 2 seconds
+    const timeInterval = 2;
+    console.log(`Downloaded ${i + 1}/${downloadList.length}: ${imageUrl}, and wait ${timeInterval} seconds`);
+    await new Promise((resolve) => setTimeout(resolve, timeInterval * 1000));
   }
 } catch (error) {
   if (error instanceof Deno.errors.NotFound) {

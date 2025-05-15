@@ -11,6 +11,14 @@
  * @typedef {import("https://raw.githubusercontent.com/scrapbox-jp/types/0.3.4/scrapbox.ts").Scrapbox} Scrapbox
  */
 
+let downloadList = [];
+export const clearDownloadList = () => {
+  downloadList = [];
+};
+export const getDownloadList = () => {
+  return downloadList;
+};
+
 /** Scrapbox記法をMarkdown記法に変える
  *
  * @param {Block} block
@@ -107,7 +115,14 @@ const convertNode = (node, projectName, init) => {
       return `\`? ${node.text}\``;
     case "image":
     case "strongImage":
-      return `![image](${node.src})`;
+      if (node.src.includes("https://scrapbox.io/files/")) {
+        // Add to download list
+        // FIXME: Using global variable is not a good idea
+        downloadList.push(node.src);
+        return `![[${node.src.replace("https://scrapbox.io/files/", "")}]]`;
+      } else {
+        return `![image](${node.src})`;
+      }
     case "icon":
     case "strongIcon":
       // 仕切り線だけ変換する
