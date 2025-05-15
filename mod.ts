@@ -39,6 +39,10 @@ try {
     }
 
     const response = await fetch(imageUrl);
+    if (!response.ok) {
+      console.error(`Failed to download ${i + 1}/${downloadList.length}: ${imageUrl}: ${response.status} ${response.statusText}`);
+      throw new Error(`Failed to download ${imageUrl}: ${response.status} ${response.statusText}`);
+    }
     const imageData = new Uint8Array(await response.arrayBuffer());
     const imagePath = `./obsidianPages/images/${imageUrl.replace("https://scrapbox.io/files/", "")}`;
     await Deno.writeFile(imagePath, imageData);
